@@ -22,10 +22,27 @@ class Hypothesis3(Hypothesis):
     sale date
     location
     grade
+
+    My Take: 
+    I need from the data frame columns :
+
+    zipcode
+    lat
+    long
+    price 
+    grade
+    condition
+    sqft_living
+    sqft_lot
+
     """
 
     def __init__(self):
         super().__init__()
         print(self.df.head(15))
+
+
+
+
 
 Hypothesis3()

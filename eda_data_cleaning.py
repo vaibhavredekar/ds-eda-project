@@ -176,8 +176,45 @@ class DataCleaning:
         msno.matrix(new_df, sparkline=True, figsize=(10,5), fontsize=12, color=(0.5, 0.58, 0.2))
         # plt.show()
 
+
+    def create_selective_coln_df(self,df,df_coln):
+        '''
+        Creates a selective dataframe based upon the columns
+
+        Input:
+        df = dataframe of table
+        df_coln = Number of columns or list of columns
+
+        Output:
+        return selective df
+        '''
+        # selective_df1 = df.copy()
+
+        try:
+            selective_df1 = df.loc[:,df_coln]
+            return selective_df1
+        except Exception as e:
+            print(f"Failed to create a df Error:{e}, type of error: {type(e)}")
+            print(f"Failed to create a df by loc method so used fail back to get the data-frame")
+            selective_df = df[df_coln]
+            return selective_df
+
+
 if __name__ == "__main__":
     dc = DataCleaning("data\eda_house_price_details.csv")
     df = DataCleaning("data\eda_house_price_details.csv").cleaned_data_and_transformation()
     #dc.check_dups_via_csv(df,'id')
     # dc.ret_df_unique_values(df,'id','Before',True)
+
+    # print(df.columns)
+    selective = dc.create_selective_coln_df(df, ['id',
+                                                'zipcode',
+                                                'lat',
+                                                'long',
+                                                'price',
+                                                'grade',
+                                                'condition',
+                                                'sqft_living',
+                                                'sqft_lot'])
+    
+    print(selective.head(15))
