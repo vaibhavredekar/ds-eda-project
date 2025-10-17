@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 class DataCleaning:
 
     df = pd.DataFrame([])
-    print('default Dataframe', df.head())
+    #print('default Dataframe', df.head())
 
     def __init__(self,dataset_file):
         self.dataset_file = dataset_file
@@ -111,7 +111,7 @@ class DataCleaning:
         df1[df_column] = df1[df_column].replace('',0).astype(ch_type)
         return df1
 
-    def convert_to_dt_type(self,df,frmt='%Y-%m-%d',df_column='date'):
+    def convert_to_dt_type(self,df,frmt='%Y-%m-%d',df_column='date',display=False):
         '''
         converting to date-time format suitable for plots
         Input:
@@ -123,18 +123,21 @@ class DataCleaning:
         return df
         '''
         df1 = df.copy()
-        print('Before:',df1[df_column][0],'\n\t',type(df1[df_column][0]))
+        if display:
+            print('Before:',df1[df_column][0],'\n\t',type(df1[df_column][0]))
         df1[df_column] = pd.to_datetime(df1[df_column], format=frmt)
-        # print('After:',df1.df_column[0],'\n\t',type(df1.df_column[0]))
+        if display:
+            print('After:',df1.df_column[0],'\n\t',type(df1.df_column[0]))
         return df1
   
-    def save_df(self,updated_df):
+    def save_df(self,updated_df, display=False):
         '''
         Saving the last updated df to the class df object
         updated_df = provide the last df after all transformations
         '''
         DataCleaning.df = updated_df.copy()
-        print(DataCleaning.df.head())
+        if display:
+            print(DataCleaning.df.head())
         
     def cleaned_data_and_transformation(self):
         '''
@@ -148,7 +151,7 @@ class DataCleaning:
         last = self.convert_to_dt_type(new1)
 
         # Final df
-        print(last.info(),'\n',last.head())
+        # print(last.info(),'\n',last.head())
         self.save_df(last)
         return last
 
@@ -157,18 +160,18 @@ class DataCleaning:
         Include flows for checking the data
         '''
         new_df = self.cleaned_data_and_transformation()
-        print("Cleaned Data:\n","*"*30)
-        print(DataCleaning.df.head())
-        print("*"*30)
+        # print("Cleaned Data:\n","*"*30)
+        # print(DataCleaning.df.head())
+        # print("*"*30)
 
         # msno.bar(new_df,color='orange')
         # plt.show()
         df_housing_prices_data = self.re_read_df_housing_price(self.dataset_file,',')
         msno.matrix(df_housing_prices_data, sparkline=True, figsize=(10,5), fontsize=12, color=(0.5, 0.58, 0.2))
-        plt.show()
+        # plt.show()
 
         msno.matrix(new_df, sparkline=True, figsize=(10,5), fontsize=12, color=(0.5, 0.58, 0.2))
-        plt.show()
+        # plt.show()
 
 if __name__ == "__main__":
     DataCleaning("data\eda_house_price_details.csv").main()
