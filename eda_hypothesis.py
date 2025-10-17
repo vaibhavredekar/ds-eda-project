@@ -12,9 +12,20 @@ class Hypothesis:
 
 
 class Hypothesis3(Hypothesis):
+    """
+    Homes in central zip codes have higher prices regardless of grade or condition.
+    Need to check certain columns within the data.
+
+    id
+    yr_renovated
+    age_building
+    sale date
+    location
+    grade
+    """
+
     def __init__(self):
         super().__init__()
         print(self.df.head(15))
-
 
 Hypothesis3()
