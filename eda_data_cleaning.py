@@ -136,7 +136,7 @@ class DataCleaning:
         DataCleaning.df = updated_df.copy()
         print(DataCleaning.df.head())
         
-    def clean_data_and_transformation(self):
+    def cleaned_data_and_transformation(self):
         '''
         Data cleaning for complete table 
         Saves the updated df to the class df and
@@ -156,7 +156,7 @@ class DataCleaning:
         '''
         Include flows for checking the data
         '''
-        new_df = self.clean_data_and_transformation()
+        new_df = self.cleaned_data_and_transformation()
         print("Cleaned Data:\n","*"*30)
         print(DataCleaning.df.head())
         print("*"*30)
