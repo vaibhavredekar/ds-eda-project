@@ -24,31 +24,6 @@ import seaborn as sns
 class Hypothesis3():
     """
     Homes in central zip codes have higher prices regardless of grade or condition.
-    Need to check certain columns within the data.
-
-    id
-    yr_renovated
-    age_building
-    sale date
-    location
-    grade
-
-    My Take: 
-    I need from the data frame columns :
-
-    id    
-    zipcode
-    lat
-    long
-    price 
-    grade
-    condition
-    sqft_living
-    sqft_lot
-    price
-    sqft_living15
-    sqft_lot15
-
     """
 
     def __init__(self):
@@ -77,7 +52,7 @@ class Hypothesis3():
         result = (min,max,mean,mode)
         return result
 
-    def determine_central_loc_an(self, df):
+    def determine_central_loc_anly(self, df):
         '''
         Finding the central location 
         '''
@@ -117,7 +92,7 @@ class Hypothesis3():
         for key, value in sorted(correlations.items(), key=lambda x: abs(x[1]), reverse=True):
             print(f"{key:20}: {value:+.3f}")
 
-    def check_prices_for_cen_periph_an(self,df):
+    def check_prices_for_cen_periph_anly(self,df):
         # Do central and peripheral properties have different prices?
         central_prices = df[df['is_central']]['price_per_sqft']
         peripheral_prices = df[~df['is_central']]['price_per_sqft']
@@ -219,9 +194,9 @@ class Hypothesis3():
     def prep_df(self):
         # Flow for Hypothesis -3
         df_3 = self.df.copy()
-        self.determine_central_loc_an(df_3)
+        self.determine_central_loc_anly(df_3)
         self.corr_anly(df_3)
-        self.check_prices_for_cen_periph_an(df_3)
+        self.check_prices_for_cen_periph_anly(df_3)
         return df_3
 
     def main(self, df):
@@ -250,11 +225,276 @@ class Hypothesis3():
         # self.vis_loc_vs_qlty_scatter(df)
         self.vis_prc_by_grade_condition(df)
 
+class Hypothesis2():
+    '''
+    Renovating the current state of the apartments would lead to increase in profit margins.
+    '''
+
+    def __init__(self):
+        # get last updated df
+        self.df = Hypothesis3().prep_df()
+
+    
+    # analysis
+    def renv_prem_anly(self,df):
+        df['is_renovated'] = df['yr_renovated'] > 0
+        df['years_since_renovation'] = 2024 - df['yr_renovated']  # Adjust base year as needed
+        df['years_since_renovation'] = df['years_since_renovation'].apply(lambda x: x if x > 0 else None)
+
+        # Calculate renovation premium
+        renovated_mean = df[df['is_renovated']]['price_per_sqft'].mean()
+        non_renovated_mean = df[~df['is_renovated']]['price_per_sqft'].mean()
+        renovation_premium_pct = ((renovated_mean - non_renovated_mean) / non_renovated_mean) * 100
+
+        print(f"Renovation premium: {renovation_premium_pct:.1f}%")
+        # Expected: 15-25% premium
+
+    def qlty_tier_roi_anly(self,df):
+        # Quality Tier ROI Analysis
+        # Create quality tiers based on grade and condition
+        df['quality_tier'] = pd.cut(df['grade'], 
+                                bins=[0, 7, 9, 11, 14],
+                                labels=['Basic', 'Good', 'Very Good', 'Excellent'])
+
+        df['condition_tier'] = pd.cut(df['condition'],
+                                    bins=[0, 2, 3, 4, 5],
+                                    labels=['Poor', 'Average', 'Good', 'Excellent'])
+
+        # Analyze price premiums by tier
+        grade_premium = df.groupby('quality_tier')['price_per_sqft'].mean()
+        condition_premium = df.groupby('condition_tier')['price_per_sqft'].mean()
+
+        # Calculate ROI (assuming external renovation cost data)
+        # This would require market data on renovation costs per quality tier
+
+    def mrg_prc_per_grade_cond_anly(self, df):
+        #  Diminishing Returns Analysis
+        # Analyze marginal price increases per grade/condition point
+        grade_marginal = df.groupby('grade')['price_per_sqft'].mean().diff()
+        condition_marginal = df.groupby('condition')['price_per_sqft'].mean().diff()
+
+        # Find inflection points where returns diminish
+        grade_inflection = grade_marginal[grade_marginal < grade_marginal.quantile(0.25)].index[0]
+        condition_inflection = condition_marginal[condition_marginal < condition_marginal.quantile(0.25)].index[0]
+
+        print(f"Grade diminishing returns start at: {grade_inflection}")
+        print(f"Condition diminishing returns start at: {condition_inflection}")
+        # Expected: Grade 10-11, Condition 4
+
+    def renv_effect_across_segment_anly(self, df):
+        # Interaction Effects
+        # Analyze renovation effects across different segments
+        interaction_analysis = df.groupby(['is_renovated', 'is_central']).agg({
+            'price_per_sqft': 'mean',
+            'id': 'count'
+        }).reset_index()
+
+        # Calculate interaction premium
+        central_renovated = interaction_analysis[
+            (interaction_analysis['is_central']) & 
+            (interaction_analysis['is_renovated'])
+        ]['price_per_sqft'].values[0]
+
+        central_non_renovated = interaction_analysis[
+            (interaction_analysis['is_central']) & 
+            (~interaction_analysis['is_renovated'])
+        ]['price_per_sqft'].values[0]
+
+        interaction_premium = ((central_renovated - central_non_renovated) / central_non_renovated) * 100
+
+    def prep_df(self):
+
+        # Analysis
+        df_2 = self.df.copy()
+        self.renv_prem_anly(df_2)
+        self.qlty_tier_roi_anly(df_2)
+        self.mrg_prc_per_grade_cond_anly(df_2)
+        self.renv_effect_across_segment_anly(df_2)
+        print(len(df_2.columns), df_2.columns)
+        return df_2
+    
+    # visualizations
+
+    def vis_main_plot(self,df):
+        #  Core Premium Evidence
+        plt.figure(figsize=(14, 10))
+
+        # Plot 1: Renovated vs Non-renovated price distribution
+        plt.subplot(2, 2, 1)
+        sns.boxplot(data=df, x='is_renovated', y='price_per_sqft')
+        plt.title('Price per SqFt: Renovated vs Non-Renovated')
+        plt.xlabel('Renovated')
+        plt.xticks([0, 1], ['No', 'Yes'])
+        plt.ylabel('Price per SqFt ($)')
+
+        # Plot 2: Grade vs Price with renovation overlay
+        plt.subplot(2, 2, 2)
+        sns.scatterplot(data=df, x='grade', y='price_per_sqft', hue='is_renovated', alpha=0.6)
+        plt.title('Price by Grade: Renovation Impact')
+        plt.xlabel('Grade')
+        plt.ylabel('Price per SqFt ($)')
+
+        # Plot 3: Condition vs Price with renovation overlay
+        plt.subplot(2, 2, 3)
+        sns.scatterplot(data=df, x='condition', y='price_per_sqft', hue='is_renovated', alpha=0.6)
+        plt.title('Price by Condition: Renovation Impact')
+        plt.xlabel('Condition')
+        plt.ylabel('Price per SqFt ($)')
+
+        # Plot 4: Years since renovation effect
+        plt.subplot(2, 2, 4)
+        renovated_df = df[df['is_renovated']].copy()
+        sns.scatterplot(data=renovated_df, x='years_since_renovation', y='price_per_sqft', alpha=0.6)
+        plt.title('Renovation Age vs Price Premium')
+        plt.xlabel('Years Since Renovation')
+        plt.ylabel('Price per SqFt ($)')
+
+        plt.tight_layout()
+        plt.show()
+
+    def vis_qlty_roi(self,df):
+        #  Quality Tier ROI Visualization
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+        # Grade tier analysis
+        grade_price = df.groupby('quality_tier')['price_per_sqft'].mean()
+        grade_count = df.groupby('quality_tier').size()
+
+        bars1 = ax1.bar(grade_price.index, grade_price.values, color='lightblue', edgecolor='navy')
+        ax1.set_ylabel('Average Price per SqFt ($)')
+        ax1.set_xlabel('Quality Tier (by Grade)')
+        ax1.set_title('Price Premium by Quality Tier')
+
+        # Add value labels
+        for bar, price in zip(bars1, grade_price.values):
+            ax1.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 5, 
+                    f'${price:.0f}', ha='center', va='bottom')
+
+        # Condition tier analysis
+        condition_price = df.groupby('condition_tier')['price_per_sqft'].mean()
+
+        bars2 = ax2.bar(condition_price.index, condition_price.values, color='lightgreen', edgecolor='darkgreen')
+        ax2.set_ylabel('Average Price per SqFt ($)')
+        ax2.set_xlabel('Condition Tier')
+        ax2.set_title('Price Premium by Condition Tier')
+
+        # Add value labels
+        for bar, price in zip(bars2, condition_price.values):
+            ax2.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 5, 
+                    f'${price:.0f}', ha='center', va='bottom')
+
+        plt.tight_layout()
+        plt.show()
+
+    def vis_dimnish_returns(self,df):
+        # Diminishing Returns Analysis
+        plt.figure(figsize=(14, 6))
+
+        # Plot 1: Marginal returns by grade
+        plt.subplot(1, 2, 1)
+        grade_avg_prices = df.groupby('grade')['price_per_sqft'].mean()
+        grade_marginal = grade_avg_prices.diff()
+
+        plt.plot(grade_avg_prices.index, grade_avg_prices.values, 'bo-', label='Average Price', linewidth=2)
+        plt.xlabel('Grade')
+        plt.ylabel('Average Price per SqFt ($)')
+        plt.title('Price by Grade Level')
+        plt.grid(True, alpha=0.3)
+
+        # Add secondary axis for marginal returns
+        ax2 = plt.gca().twinx()
+        ax2.plot(grade_marginal.index[1:], grade_marginal.values[1:], 'ro--', label='Marginal Increase', linewidth=2)
+        ax2.set_ylabel('Marginal Price Increase ($)')
+        ax2.axhline(y=grade_marginal.median(), color='red', linestyle=':', alpha=0.7, label='Median Increase')
+
+        plt.legend()
+
+        # Plot 2: Marginal returns by condition
+        plt.subplot(1, 2, 2)
+        condition_avg_prices = df.groupby('condition')['price_per_sqft'].mean()
+        condition_marginal = condition_avg_prices.diff()
+
+        plt.plot(condition_avg_prices.index, condition_avg_prices.values, 'go-', label='Average Price', linewidth=2)
+        plt.xlabel('Condition')
+        plt.ylabel('Average Price per SqFt ($)')
+        plt.title('Price by Condition Level')
+        plt.grid(True, alpha=0.3)
+
+        # Add secondary axis for marginal returns
+        ax2 = plt.gca().twinx()
+        ax2.plot(condition_marginal.index[1:], condition_marginal.values[1:], 'mo--', label='Marginal Increase', linewidth=2)
+        ax2.set_ylabel('Marginal Price Increase ($)')
+        ax2.axhline(y=condition_marginal.median(), color='purple', linestyle=':', alpha=0.7, label='Median Increase')
+
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+    def vis_interaction_effects(self,df):
+        #  Interaction Effects Visualization
+
+        # Create a pivot table for heatmap
+        pivot_data = df.pivot_table(
+            values='price_per_sqft',
+            index='quality_tier',
+            columns='is_central',
+            aggfunc='mean'
+        )
+        pivot_data.columns = ['Peripheral', 'Central']
+
+        plt.figure(figsize=(12, 8))
+
+        # Heatmap
+        plt.subplot(2, 2, 1)
+        sns.heatmap(pivot_data, annot=True, fmt='.0f', cmap='YlOrRd', cbar_kws={'label': 'Price per SqFt ($)'})
+        plt.title('Price per SqFt: Quality Tier vs Location')
+        plt.ylabel('Quality Tier')
+        plt.xlabel('Location')
+
+        # Interaction plot
+        plt.subplot(2, 2, 2)
+        sns.pointplot(data=df, x='quality_tier', y='price_per_sqft', hue='is_central', 
+                    palette=['red', 'blue'], markers=['o', 's'], linestyles=['-', '--'])
+        plt.title('Quality-Location Interaction Effect')
+        plt.xlabel('Quality Tier')
+        plt.ylabel('Price per SqFt ($)')
+        plt.legend(['Peripheral', 'Central'])
+
+        # Renovation effect by location
+        plt.subplot(2, 2, 3)
+        sns.barplot(data=df, x='is_central', y='price_per_sqft', hue='is_renovated')
+        plt.title('Renovation Premium: Central vs Peripheral')
+        plt.xlabel('Central Location')
+        plt.xticks([0, 1], ['No', 'Yes'])
+        plt.ylabel('Price per SqFt ($)')
+
+        # Grade distribution by renovation status
+        plt.subplot(2, 2, 4)
+        sns.boxplot(data=df, x='is_renovated', y='grade')
+        plt.title('Quality Grade: Renovated vs Non-Renovated')
+        plt.xlabel('Renovated')
+        plt.xticks([0, 1], ['No', 'Yes'])
+        plt.ylabel('Grade')
+
+        plt.tight_layout()
+        plt.show()
+
+
+    def main(self, df):
+        # self.vis_main_plot(df)
+        # self.vis_qlty_roi(df)
+        # self.vis_dimnish_returns(df)
+        self.vis_interaction_effects(df)
+
+
 
 if __name__ == "__main__":
 
-    Hypothesis3().main()
-
+    obj = Hypothesis2()
+    df = obj.df.copy()
+    df_2 = obj.prep_df(df)
+    print(df_2.head())
+    obj.main(df_2)
 
 
 
