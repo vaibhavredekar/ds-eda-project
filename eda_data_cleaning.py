@@ -1,3 +1,5 @@
+
+-+*
 '''
 Central file for EDA operations
 '''
@@ -207,14 +209,14 @@ if __name__ == "__main__":
     # dc.ret_df_unique_values(df,'id','Before',True)
 
     # print(df.columns)
-    selective = dc.create_selective_coln_df(df, ['id',
-                                                'zipcode',
-                                                'lat',
-                                                'long',
-                                                'price',
-                                                'grade',
-                                                'condition',
-                                                'sqft_living',
-                                                'sqft_lot'])
+    # selective = dc.create_selective_coln_df(df, ['id',
+    #                                             'zipcode',
+    #                                             'lat',
+    #                                             'long',
+    #                                             'price',
+    #                                             'grade',
+    #                                             'condition',
+    #                                             'sqft_living',
+    #                                             'sqft_lot'])
     
-    print(selective.head(15))
+    # print(selective.head(15))
