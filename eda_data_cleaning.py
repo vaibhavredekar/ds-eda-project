@@ -1,5 +1,3 @@
-
--+*
 '''
 Central file for EDA operations
 '''

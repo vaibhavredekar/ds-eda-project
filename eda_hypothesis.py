@@ -11,15 +11,17 @@ import fsspec
 from shapely.geometry import Point
 import folium
 import math
+from time import sleep
+from scipy import stats
+import seaborn as sns
 
+# class Hypothesis:
+#     def __init__(self):
+#         self.dc_ob = DataCleaning("data\eda_house_price_details.csv")
+#         self.df = DataCleaning("data\eda_house_price_details.csv").cleaned_data_and_transformation()
+#         # print(self.df.head(10))
 
-class Hypothesis:
-    def __init__(self):
-        self.dc_ob = DataCleaning("data\eda_house_price_details.csv")
-        self.df = DataCleaning("data\eda_house_price_details.csv").cleaned_data_and_transformation()
-        # print(self.df.head(10))
-
-class Hypothesis3(Hypothesis):
+class Hypothesis3():
     """
     Homes in central zip codes have higher prices regardless of grade or condition.
     Need to check certain columns within the data.
@@ -50,36 +52,19 @@ class Hypothesis3(Hypothesis):
     """
 
     def __init__(self):
-        super().__init__()
+        # super().__init__()
         # print(self.df.head(15))
-        self.selective_df = self.filtered_df_cols()
-        
-    def filtered_df_cols(self):
-        self.df.head(15)      
-        selective_df = Hypothesis().dc_ob.create_selective_coln_df(self.df, [  'id',
-                                                                        'zipcode',
-                                                                        'lat',
-                                                                        'long',
-                                                                        'price',
-                                                                        'grade',
-                                                                        'condition',
-                                                                        'sqft_living',
-                                                                        'sqft_lot',
-                                                                        'sqft_living15',
-                                                                        'sqft_lot15',
-                                                                        'price',
-                                                                        'date',
-                                                                        'yr_renovated'])
+        # self.selective_df = self.filtered_df_cols()
+        self.df = DataCleaning("data\eda_house_price_details.csv").cleaned_data_and_transformation()
+        self.dc_ob = DataCleaning("data\eda_house_price_details.csv")
+
+    # Analysis
+    def filtered_df_cols(self, df_columns):
+        self.df.head(15)
+        selective_df = self.dc_ob.create_selective_coln_df(self.df, df_columns)
         return selective_df
   
-
-    def filter_locations(self):
-        df = self.selective_df.copy()
-        print(df.columns, df.shape, df.info())
-        return df
-
-
-    def calc_mean_mode_max_min(self, df, df_column):
+    def get_mean_mode_max_min(self, df, df_column):
         '''
         return tuple(min,max,mean,mode)
         '''
@@ -92,12 +77,10 @@ class Hypothesis3(Hypothesis):
         result = (min,max,mean,mode)
         return result
 
-
-    def h3_prep_data(self, df):
+    def determine_central_loc_an(self, df):
         '''
         Finding the central location 
         '''
-
         # get price per sqft:
         df['price_per_sqft'] = df['price'] / df['sqft_living']
 
@@ -116,20 +99,139 @@ class Hypothesis3(Hypothesis):
 
         print(central_lat, central_loc, central_long, df['distance_from_center'], df['is_central'])
 
-
     def corr_anly(self,df):
-        loc_prc_corr = df[['distance_from_center', 'price', 'price_per_sqft']].corr()
+        # 1. Location vs Price correlation
+        location_price_corr = df[['distance_from_center', 'price', 'price_per_sqft']].corr()
         print("Correlation Matrix:")
-        print(loc_prc_corr)
+        print(location_price_corr)
+
+        # 2. Compare correlation strengths
+        correlations = {
+            'distance_vs_price': df['distance_from_center'].corr(df['price']),
+            'grade_vs_price': df['grade'].corr(df['price']),
+            'condition_vs_price': df['condition'].corr(df['price']),
+            'sqft_vs_price': df['sqft_living'].corr(df['price'])
+        }
+
+        print("\nCorrelation Strength Comparison:")
+        for key, value in sorted(correlations.items(), key=lambda x: abs(x[1]), reverse=True):
+            print(f"{key:20}: {value:+.3f}")
+
+    def check_prices_for_cen_periph_an(self,df):
+        # Do central and peripheral properties have different prices?
+        central_prices = df[df['is_central']]['price_per_sqft']
+        peripheral_prices = df[~df['is_central']]['price_per_sqft']
+
+        t_stat, p_value = stats.ttest_ind(central_prices, peripheral_prices, equal_var=False)
+        print(f"T-test results: t={t_stat:.2f}, p-value={p_value:.6f}")
+        print(f"Central avg price/sqft: ${central_prices.mean():.2f}")
+        print(f"Peripheral avg price/sqft: ${peripheral_prices.mean():.2f}")
+
+
+    # Visualizations
+    def vis_price_map(self,df):
+        # Create a base map centered on your area
+        m = folium.Map(location=[df['lat'].mean(), df['long'].mean()], zoom_start=10)
+
+        # Color code by price percentile
+        price_75 = df['price_per_sqft'].quantile(0.75)
+        price_25 = df['price_per_sqft'].quantile(0.25)
+
+        for idx, row in df.iterrows():
+            # Determine color based on price
+            if row['price_per_sqft'] >= price_75:
+                color = 'red'  # High price
+            elif row['price_per_sqft'] <= price_25:
+                color = 'blue'   # Low price
+            else:
+                color = 'green'  # Medium price
+            
+            # Add circle marker
+            folium.CircleMarker(
+                location=[row['lat'], row['long']],
+                radius=3,
+                popup=f"Price/sqft: ${row['price_per_sqft']:.0f}<br>Grade: {row['grade']}<br>Condition: {row['condition']}",
+                color=color,
+                fill=True
+            ).add_to(m)
+
+        # Save the map
+        m.save('property_prices_map.html')
+
+    def vis_price_distr_cent(self,df):
+        plt.figure(figsize=(10, 6))
+        sns.boxplot(data=df, x='is_central', y='price_per_sqft')
+        plt.title('Price per SqFt: Central vs Peripheral Areas')
+        plt.xlabel('Central Area')
+        plt.ylabel('Price per Square Foot ($)')
+        plt.xticks([0, 1], ['Peripheral', 'Central'])
+        plt.show()
+
+    def vis_loc_vs_qlty_scatter(self,df):
+        plt.figure(figsize=(12, 8))
+        scatter = plt.scatter(df['distance_from_center'], df['price_per_sqft'], 
+                            c=df['grade'], cmap='viridis', alpha=0.6)
+        plt.colorbar(scatter, label='Property Grade')
+        plt.xlabel('Distance from Center')
+        plt.ylabel('Price per Square Foot ($)')
+        plt.title('Price vs Location: Color shows Property Grade\n(Proving location dominates grade)')
+        #plt.gca().invert_xaxis()  # So closer to center is on right
+        plt.show()
+
+    def vis_prc_by_grade_condition(self,df):
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+
+        # Plot 1: Price by Grade in each area
+        sns.boxplot(data=df, x='grade', y='price_per_sqft', hue='is_central', ax=ax1)
+        ax1.set_title('Price by Grade: Central vs Peripheral')
+        ax1.legend(['Peripheral', 'Central'])
+
+        # Plot 2: Price by Condition in each area  
+        sns.boxplot(data=df, x='condition', y='price_per_sqft', hue='is_central', ax=ax2)
+        ax2.set_title('Price by Condition: Central vs Peripheral')
+        ax2.legend(['Peripheral', 'Central'])
+
+        plt.tight_layout()
+        plt.show()
+
+
+
+
+    def main(self):
+
+        df_columns = ['id',
+            'zipcode',
+            'lat',
+            'long',
+            'price',
+            'grade',
+            'condition',
+            'sqft_living',
+            'sqft_lot',
+            'sqft_living15',
+            'sqft_lot15',
+            'price',
+            'date',
+            'yr_renovated']
+        df_filtered= self.filtered_df_cols(df_columns)
+        # print(df_filtered.head())
+
+        # Flow for Hypothesis -3
+        df_3 = self.df.copy()
+        self.determine_central_loc_an(df_3)
+        self.corr_anly(df_3)
+        self.check_prices_for_cen_periph_an(df_3)
+
+        # vis
+        self.vis_price_map(df_3)
+        self.vis_price_distr_cent(df_3)
+        self.vis_loc_vs_qlty_scatter(df_3)
+        self.vis_prc_by_grade_condition(df_3)
 
 
 if __name__ == "__main__":
 
-    df_filtered= Hypothesis3().filtered_df_cols()
-    print(df_filtered.head())
-
-    Hypothesis3().h3_prep_data(df_filtered)
-    Hypothesis3().corr_anly(df_filtered)
+    Hypothesis3().main()
 
 
 
