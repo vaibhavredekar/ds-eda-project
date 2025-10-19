@@ -24,31 +24,6 @@ import seaborn as sns
 class Hypothesis3():
     """
     Homes in central zip codes have higher prices regardless of grade or condition.
-    Need to check certain columns within the data.
-
-    id
-    yr_renovated
-    age_building
-    sale date
-    location
-    grade
-
-    My Take: 
-    I need from the data frame columns :
-
-    id    
-    zipcode
-    lat
-    long
-    price 
-    grade
-    condition
-    sqft_living
-    sqft_lot
-    price
-    sqft_living15
-    sqft_lot15
-
     """
 
     def __init__(self):
@@ -77,7 +52,7 @@ class Hypothesis3():
         result = (min,max,mean,mode)
         return result
 
-    def determine_central_loc_an(self, df):
+    def determine_central_loc_anly(self, df):
         '''
         Finding the central location 
         '''
@@ -117,7 +92,7 @@ class Hypothesis3():
         for key, value in sorted(correlations.items(), key=lambda x: abs(x[1]), reverse=True):
             print(f"{key:20}: {value:+.3f}")
 
-    def check_prices_for_cen_periph_an(self,df):
+    def check_prices_for_cen_periph_anly(self,df):
         # Do central and peripheral properties have different prices?
         central_prices = df[df['is_central']]['price_per_sqft']
         peripheral_prices = df[~df['is_central']]['price_per_sqft']
@@ -219,9 +194,9 @@ class Hypothesis3():
     def prep_df(self):
         # Flow for Hypothesis -3
         df_3 = self.df.copy()
-        self.determine_central_loc_an(df_3)
+        self.determine_central_loc_anly(df_3)
         self.corr_anly(df_3)
-        self.check_prices_for_cen_periph_an(df_3)
+        self.check_prices_for_cen_periph_anly(df_3)
         return df_3
 
     def main(self, df):
@@ -250,10 +225,114 @@ class Hypothesis3():
         # self.vis_loc_vs_qlty_scatter(df)
         self.vis_prc_by_grade_condition(df)
 
+class Hypothesis2():
+    '''
+    Renovating the current state of the apartments would lead to increase in profit margins.
+    '''
+
+    def __init__(self):
+        # get last updated df
+        self.df = Hypothesis3().prep_df()
+
+    
+    # analysis
+    def renv_prem_anly(self,df):
+        df['is_renovated'] = df['yr_renovated'] > 0
+        df['years_since_renovation'] = 2024 - df['yr_renovated']  # Adjust base year as needed
+        df['years_since_renovation'] = df['years_since_renovation'].apply(lambda x: x if x > 0 else None)
+
+        # Calculate renovation premium
+        renovated_mean = df[df['is_renovated']]['price_per_sqft'].mean()
+        non_renovated_mean = df[~df['is_renovated']]['price_per_sqft'].mean()
+        renovation_premium_pct = ((renovated_mean - non_renovated_mean) / non_renovated_mean) * 100
+
+        print(f"Renovation premium: {renovation_premium_pct:.1f}%")
+        # Expected: 15-25% premium
+
+
+    def qlty_tier_roi_anly(self,df):
+        # Quality Tier ROI Analysis
+        # Create quality tiers based on grade and condition
+        df['quality_tier'] = pd.cut(df['grade'], 
+                                bins=[0, 7, 9, 11, 14],
+                                labels=['Basic', 'Good', 'Very Good', 'Excellent'])
+
+        df['condition_tier'] = pd.cut(df['condition'],
+                                    bins=[0, 2, 3, 4, 5],
+                                    labels=['Poor', 'Average', 'Good', 'Excellent'])
+
+        # Analyze price premiums by tier
+        grade_premium = df.groupby('quality_tier')['price_per_sqft'].mean()
+        condition_premium = df.groupby('condition_tier')['price_per_sqft'].mean()
+
+        # Calculate ROI (assuming external renovation cost data)
+        # This would require market data on renovation costs per quality tier
+
+    def mrg_prc_per_grade_cond_anly(self, df):
+        #  Diminishing Returns Analysis
+        # Analyze marginal price increases per grade/condition point
+        grade_marginal = df.groupby('grade')['price_per_sqft'].mean().diff()
+        condition_marginal = df.groupby('condition')['price_per_sqft'].mean().diff()
+
+        # Find inflection points where returns diminish
+        grade_inflection = grade_marginal[grade_marginal < grade_marginal.quantile(0.25)].index[0]
+        condition_inflection = condition_marginal[condition_marginal < condition_marginal.quantile(0.25)].index[0]
+
+        print(f"Grade diminishing returns start at: {grade_inflection}")
+        print(f"Condition diminishing returns start at: {condition_inflection}")
+        # Expected: Grade 10-11, Condition 4
+
+
+    def renv_effect_across_segment_anly(self, df):
+        # Interaction Effects
+        # Analyze renovation effects across different segments
+        interaction_analysis = df.groupby(['is_renovated', 'is_central']).agg({
+            'price_per_sqft': 'mean',
+            'id': 'count'
+        }).reset_index()
+
+        # Calculate interaction premium
+        central_renovated = interaction_analysis[
+            (interaction_analysis['is_central']) & 
+            (interaction_analysis['is_renovated'])
+        ]['price_per_sqft'].values[0]
+
+        central_non_renovated = interaction_analysis[
+            (interaction_analysis['is_central']) & 
+            (~interaction_analysis['is_renovated'])
+        ]['price_per_sqft'].values[0]
+
+        interaction_premium = ((central_renovated - central_non_renovated) / central_non_renovated) * 100
+
+
+
+    # visualizations
+
+
+
+
+    def prep_df(self, df):
+
+        # Analysis
+        df_2 = self.df.copy()
+        self.renv_prem_anly(df_2)
+        self.qlty_tier_roi_anly(df_2)
+        self.mrg_prc_per_grade_cond_anly(df_2)
+        self.renv_effect_across_segment_anly(df_2)
+        print(len(df_2.columns), df_2.columns)
+        return df_2
+
+
+    def main(self):
+        pass
+
 
 if __name__ == "__main__":
 
-    Hypothesis3().main()
+    obj = Hypothesis2()
+    df = obj.df.copy()
+    df_2 = obj.prep_df(df)
+    print(df_2.head())
 
 
 
