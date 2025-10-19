@@ -179,25 +179,52 @@ class Hypothesis3():
         plt.show()
 
     def vis_prc_by_grade_condition(self,df):
+        # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+
+        # # Plot 1: Price by Grade in each area
+        # sns.boxplot(data=df, x='grade', y='price_per_sqft', hue='is_central', ax=ax1)
+        # ax1.set_title('Price by Grade: Central vs Peripheral')
+        # ax1.legend(['Peripheral', 'Central'])
+
+        # # Plot 2: Price by Condition in each area  
+        # sns.boxplot(data=df, x='condition', y='price_per_sqft', hue='is_central', ax=ax2)
+        # ax2.set_title('Price by Condition: Central vs Peripheral')
+        # ax2.legend(['Peripheral', 'Central'])
+
+        # plt.tight_layout()
+        # plt.show()
+
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
 
         # Plot 1: Price by Grade in each area
         sns.boxplot(data=df, x='grade', y='price_per_sqft', hue='is_central', ax=ax1)
         ax1.set_title('Price by Grade: Central vs Peripheral')
-        ax1.legend(['Peripheral', 'Central'])
+
+        # Get correct handles and labels
+        handles1, labels1 = ax1.get_legend_handles_labels()
+        # Map True/False to desired labels
+        label_map = {True: 'Central', False: 'Peripheral'}
+        ax1.legend(handles1, [label_map[eval(lbl)] for lbl in labels1])
 
         # Plot 2: Price by Condition in each area  
         sns.boxplot(data=df, x='condition', y='price_per_sqft', hue='is_central', ax=ax2)
         ax2.set_title('Price by Condition: Central vs Peripheral')
-        ax2.legend(['Peripheral', 'Central'])
+        handles2, labels2 = ax2.get_legend_handles_labels()
+        ax2.legend(handles2, [label_map[eval(lbl)] for lbl in labels2])
 
         plt.tight_layout()
         plt.show()
 
 
+    def prep_df(self):
+        # Flow for Hypothesis -3
+        df_3 = self.df.copy()
+        self.determine_central_loc_an(df_3)
+        self.corr_anly(df_3)
+        self.check_prices_for_cen_periph_an(df_3)
+        return df_3
 
-
-    def main(self):
+    def main(self, df):
 
         df_columns = ['id',
             'zipcode',
@@ -216,17 +243,12 @@ class Hypothesis3():
         df_filtered= self.filtered_df_cols(df_columns)
         # print(df_filtered.head())
 
-        # Flow for Hypothesis -3
-        df_3 = self.df.copy()
-        self.determine_central_loc_an(df_3)
-        self.corr_anly(df_3)
-        self.check_prices_for_cen_periph_an(df_3)
 
         # vis
-        self.vis_price_map(df_3)
-        self.vis_price_distr_cent(df_3)
-        self.vis_loc_vs_qlty_scatter(df_3)
-        self.vis_prc_by_grade_condition(df_3)
+        # self.vis_price_map(df)
+        # self.vis_price_distr_cent(df)
+        # self.vis_loc_vs_qlty_scatter(df)
+        self.vis_prc_by_grade_condition(df)
 
 
 if __name__ == "__main__":
