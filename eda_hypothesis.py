@@ -31,6 +31,11 @@ class Hypothesis3():
 
     # Analysis
     def filtered_df_cols(self, df_columns):
+        '''
+        Get df with selective columns
+        df_columns : list of columns in df
+        return df
+        '''
         self.df.head(15)
         selective_df = self.dc_ob.create_selective_coln_df(self.df, df_columns)
         return selective_df
@@ -51,6 +56,7 @@ class Hypothesis3():
     def determine_central_loc_anly(self, df):
         '''
         Finding the central location 
+        df: input df
         '''
         # get price per sqft:
         df['price_per_sqft'] = df['price'] / df['sqft_living']
@@ -71,6 +77,10 @@ class Hypothesis3():
         print(central_lat, central_loc, central_long, df['distance_from_center'], df['is_central'])
 
     def corr_anly(self,df):
+        '''
+        Correlation analysis between distance_vs_price, grade_vs_price , condition_vs_price, sqft_vs_price
+        df: input df
+        '''
         # 1. Location vs Price correlation
         location_price_corr = df[['distance_from_center', 'price', 'price_per_sqft']].corr()
         print("Correlation Matrix:")
@@ -89,6 +99,10 @@ class Hypothesis3():
             print(f"{key:20}: {value:+.3f}")
 
     def check_prices_for_cen_periph_anly(self,df):
+        '''
+        Price comparison for central and peripheral 
+        df: input df
+        '''
         # Do central and peripheral properties have different prices?
         central_prices = df[df['is_central']]['price_per_sqft']
         peripheral_prices = df[~df['is_central']]['price_per_sqft']
@@ -101,6 +115,10 @@ class Hypothesis3():
 
     # Visualizations
     def vis_price_map(self,df):
+        '''
+        Map of the location with houses in quantile range with overpriced properties marked red
+        df: input df
+        '''
         # Create a base map centered on your area
         m = folium.Map(location=[df['lat'].mean(), df['long'].mean()], zoom_start=10)
 
@@ -130,6 +148,10 @@ class Hypothesis3():
         m.save('property_prices_map.html')
 
     def vis_price_distr_cent(self,df):
+        '''
+        Distribution graph for central and periphery
+        df: input df
+        '''
         plt.figure(figsize=(10, 6))
         sns.boxplot(data=df, x='is_central', y='price_per_sqft')
         plt.title('Price per SqFt: Central vs Peripheral Areas')
@@ -139,6 +161,10 @@ class Hypothesis3():
         plt.show()
 
     def vis_loc_vs_qlty_scatter(self,df):
+        '''
+        Visualizing location vs quality graph for distance_from_center and price_per_sqft
+        df: input df
+        '''
         plt.figure(figsize=(12, 8))
         scatter = plt.scatter(df['distance_from_center'], df['price_per_sqft'], 
                             c=df['grade'], cmap='viridis', alpha=0.6)
@@ -150,21 +176,10 @@ class Hypothesis3():
         plt.show()
 
     def vis_prc_by_grade_condition(self,df):
-        # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
-
-        # # Plot 1: Price by Grade in each area
-        # sns.boxplot(data=df, x='grade', y='price_per_sqft', hue='is_central', ax=ax1)
-        # ax1.set_title('Price by Grade: Central vs Peripheral')
-        # ax1.legend(['Peripheral', 'Central'])
-
-        # # Plot 2: Price by Condition in each area  
-        # sns.boxplot(data=df, x='condition', y='price_per_sqft', hue='is_central', ax=ax2)
-        # ax2.set_title('Price by Condition: Central vs Peripheral')
-        # ax2.legend(['Peripheral', 'Central'])
-
-        # plt.tight_layout()
-        # plt.show()
-
+        '''
+        Visualizing location vs quality graph for distance_from_center and price_per_sqft
+        df: input df
+        '''
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
 
         # Plot 1: Price by Grade in each area
@@ -188,6 +203,10 @@ class Hypothesis3():
 
 
     def prep_df(self):
+        '''
+        Getting the final df based upon the analysis
+        return df
+        '''
         # Flow for Hypothesis -3
         df_3 = self.df.copy()
         self.determine_central_loc_anly(df_3)
@@ -212,8 +231,6 @@ class Hypothesis3():
             'date',
             'yr_renovated']
         df_filtered= self.filtered_df_cols(df_columns)
-        # print(df_filtered.head())
-
 
         # vis
         # self.vis_price_map(df)
@@ -230,9 +247,12 @@ class Hypothesis2():
         # get last updated df
         self.df = Hypothesis3().prep_df()
 
-    
     # analysis
     def renv_prem_anly(self,df):
+        '''
+        renovation premimum analysis
+        df: input df
+        '''
         df['is_renovated'] = df['yr_renovated'] > 0
         df['years_since_renovation'] = 2024 - df['yr_renovated']  # Adjust base year as needed
         df['years_since_renovation'] = df['years_since_renovation'].apply(lambda x: x if x > 0 else None)
@@ -246,6 +266,10 @@ class Hypothesis2():
         # Expected: 15-25% premium
 
     def qlty_tier_roi_anly(self,df):
+        '''
+        quality tier ROI analysis
+        df: input df
+        '''
         # Quality Tier ROI Analysis
         # Create quality tiers based on grade and condition
         df['quality_tier'] = pd.cut(df['grade'], 
@@ -260,10 +284,11 @@ class Hypothesis2():
         grade_premium = df.groupby('quality_tier')['price_per_sqft'].mean()
         condition_premium = df.groupby('condition_tier')['price_per_sqft'].mean()
 
-        # Calculate ROI (assuming external renovation cost data)
-        # This would require market data on renovation costs per quality tier
-
     def mrg_prc_per_grade_cond_anly(self, df):
+        '''
+        Marginal percentage per grade and condition analysis
+        df: input df
+        '''
         #  Diminishing Returns Analysis
         # Analyze marginal price increases per grade/condition point
         grade_marginal = df.groupby('grade')['price_per_sqft'].mean().diff()
@@ -278,7 +303,11 @@ class Hypothesis2():
         # Expected: Grade 10-11, Condition 4
 
     def renv_effect_across_segment_anly(self, df):
-        # Interaction Effects
+        '''
+        check renovation effects across all segments
+        df: input df
+        '''
+       
         # Analyze renovation effects across different segments
         interaction_analysis = df.groupby(['is_renovated', 'is_central']).agg({
             'price_per_sqft': 'mean',
@@ -299,6 +328,9 @@ class Hypothesis2():
         interaction_premium = ((central_renovated - central_non_renovated) / central_non_renovated) * 100
 
     def prep_df(self):
+        '''
+        Getting the final updated df
+        '''
 
         # Analysis
         df_2 = self.df.copy()
@@ -312,6 +344,9 @@ class Hypothesis2():
     # visualizations
 
     def vis_main_plot(self,df):
+        '''
+        Main plot visualization
+        '''
         #  Core Premium Evidence
         plt.figure(figsize=(14, 10))
 
@@ -349,6 +384,10 @@ class Hypothesis2():
         plt.show()
 
     def vis_qlty_roi(self,df):
+        '''
+        Quality vs ROI  plot visualization
+        '''
+
         #  Quality Tier ROI Visualization
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
 
@@ -383,6 +422,10 @@ class Hypothesis2():
         plt.show()
 
     def vis_dimnish_returns(self,df):
+        '''
+        Diminishing returns graph
+        '''
+
         # Diminishing Returns Analysis
         plt.figure(figsize=(14, 6))
 
@@ -427,6 +470,9 @@ class Hypothesis2():
         plt.show()
 
     def vis_interaction_effects(self,df):
+        '''
+        Renovation effects graphs
+        '''
         #  Interaction Effects Visualization
 
         # Create a pivot table for heatmap
@@ -475,8 +521,10 @@ class Hypothesis2():
         plt.tight_layout()
         plt.show()
 
-
     def main(self, df):
+        '''
+        Simple executions 
+        '''
         # self.vis_main_plot(df)
         # self.vis_qlty_roi(df)
         # self.vis_dimnish_returns(df)
@@ -1139,7 +1187,6 @@ if __name__ == "__main__":
 
     obj = Hypothesis()
     df = obj.df_2.copy()
-    # obj.run_complete_hypothesis_1_analysis(df)
     
     df = FinalRecommendation().df
     map, top_3 = FinalRecommendation().run_property_recommendation_with_map(df)
