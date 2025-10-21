@@ -203,18 +203,3 @@ class DataCleaning:
 if __name__ == "__main__":
     dc = DataCleaning("data\eda_house_price_details.csv")
     df = DataCleaning("data\eda_house_price_details.csv").cleaned_data_and_transformation()
-    #dc.check_dups_via_csv(df,'id')
-    # dc.ret_df_unique_values(df,'id','Before',True)
-
-    # print(df.columns)
-    # selective = dc.create_selective_coln_df(df, ['id',
-    #                                             'zipcode',
-    #                                             'lat',
-    #                                             'long',
-    #                                             'price',
-    #                                             'grade',
-    #                                             'condition',
-    #                                             'sqft_living',
-    #                                             'sqft_lot'])
-    
-    # print(selective.head(15))
