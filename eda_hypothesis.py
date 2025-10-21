@@ -145,7 +145,7 @@ class Hypothesis3():
         plt.colorbar(scatter, label='Property Grade')
         plt.xlabel('Distance from Center')
         plt.ylabel('Price per Square Foot ($)')
-        plt.title('Price vs Location: Color shows Property Grade\n(Proving location dominates grade)')
+        plt.title('Price vs Location') #: Color shows Property Grade'
         #plt.gca().invert_xaxis()  # So closer to center is on right
         plt.show()
 
@@ -1083,7 +1083,7 @@ class FinalRecommendation():
             print(f" Strategy: {prop['strategy']}")
             print(f" Price: ${prop['price']:,.0f}")
             print(f" Size: {prop['sqft']:,.0f} sqft (${prop['price_per_sqft']:.0f}/sqft)")
-            print(f" Layout: {prop['bedrooms']} bed, {prop['bathrooms']} bath")
+            #print(f" Layout: {prop['bedrooms']} bed, {prop['bathrooms']} bath")
             print(f" Quality: Condition {prop['condition']}/5, Grade {prop['grade']}/13")
             print(f" Score: {prop['total_score']:.1f}/100")
             
